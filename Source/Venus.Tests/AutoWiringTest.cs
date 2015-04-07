@@ -51,16 +51,5 @@ namespace Venus.Tests
             Assert.AreEqual("Foo2", instance.Foo.Name);
             Assert.AreEqual("Bar2", instance.Bar.Name);
         }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void DependencyCanNotResolved()
-        {
-            var c = new IocContainer();
-            c.Register<IFoo, Foo1>();
-            c.Register<IFooBar, FooBar1>();
-
-            c.Resolve<IFooBar>();
-        }
     }
 }

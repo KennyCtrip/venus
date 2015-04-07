@@ -10,7 +10,7 @@ namespace Venus.Tests
     public class ResolveTest
     {
         [TestMethod]
-        public void GenericNameless()
+        public void TryResolveGenericNameless()
         {
             var c = new IocContainer();
             c.Register<Foo1>();
@@ -23,7 +23,7 @@ namespace Venus.Tests
         }
 
         [TestMethod()]
-        public void GenericNamed()
+        public void TryResolveGenericNamed()
         {
             var c = new IocContainer();
             c.Register<IFoo, Foo1>("foo1");
@@ -36,7 +36,7 @@ namespace Venus.Tests
         }
 
         [TestMethod()]
-        public void NongenericNameless()
+        public void TryResolveNongenericNameless()
         {
             var c = new IocContainer();
             c.Register(typeof(Foo1));
@@ -49,7 +49,7 @@ namespace Venus.Tests
         }
 
         [TestMethod()]
-        public void NongenericNamed()
+        public void TryResolveNongenericNamed()
         {
             var c = new IocContainer();
             c.Register(typeof(IFoo), typeof(Foo1), "foo1");
@@ -59,6 +59,46 @@ namespace Venus.Tests
             Assert.IsNotNull(c.TryResolve(typeof(IBar), "bar1"));
             Assert.IsNull(c.TryResolve(typeof(IFoo), "foo2"));
             Assert.IsNull(c.TryResolve(typeof(IBar), "bar2"));
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void ResolveGenericNamelessThrowsExceptionIfRegistrationNotExists()
+        {
+            var c = new IocContainer();
+            c.Register<IFoo, Foo1>();
+
+            c.Resolve<IBar>();
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void ResolveGenericNamedThrowsExceptionIfRegistrationNotExists()
+        {
+            var c = new IocContainer();
+            c.Register<IFoo, Foo1>("foo1");
+
+            c.Resolve<IFoo>("foo2");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void ResolveNongenericNamelessThrowsExceptionIfRegistrationNotExists()
+        {
+            var c = new IocContainer();
+            c.Register(typeof(IFoo), typeof(Foo1));
+
+            c.Resolve(typeof(IBar));
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void ResolveNongenericNamedThrowsExceptionIfRegistrationNotExists()
+        {
+            var c = new IocContainer();
+            c.Register(typeof(IFoo), typeof(Foo1), "foo1");
+
+            c.Resolve(typeof(IFoo), "foo2");
         }
 
         [TestMethod()]
