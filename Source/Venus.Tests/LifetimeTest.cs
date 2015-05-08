@@ -11,16 +11,34 @@ namespace Venus.Tests
         [TestMethod()]
         public void DefaultLifetime()
         {
-            var c = new IocContainer();
-            c.Register<IFoo, Foo1>();
+            var c = new VenusContainer();
+            c.Define<IUserRepository, SqlUserRepository>();
 
-            var instance1 = c.Resolve<IFoo>();
-            var instance2 = c.Resolve<IFoo>();
-            var instance3 = c.Resolve<IFoo>();
+            var instance1 = c.Lookup<IUserRepository>();
+            var instance2 = c.Lookup<IUserRepository>();
+            var instance3 = c.Lookup<IUserRepository>();
 
-            Assert.IsInstanceOfType(instance1, typeof(Foo1));
-            Assert.IsInstanceOfType(instance2, typeof(Foo1));
-            Assert.IsInstanceOfType(instance3, typeof(Foo1));
+            Assert.IsInstanceOfType(instance1, typeof(IUserRepository));
+            Assert.IsInstanceOfType(instance2, typeof(IUserRepository));
+            Assert.IsInstanceOfType(instance3, typeof(IUserRepository));
+
+            Assert.AreSame(instance1, instance2);
+            Assert.AreSame(instance2, instance3);
+        }
+
+        [TestMethod()]
+        public void PerLookupLifetime()
+        {
+            var c = new VenusContainer();
+            c.Define<IUserRepository, SqlUserRepository>(new PerLookupLifetime());
+
+            var instance1 = c.Lookup<IUserRepository>();
+            var instance2 = c.Lookup<IUserRepository>();
+            var instance3 = c.Lookup<IUserRepository>();
+
+            Assert.IsInstanceOfType(instance1, typeof(IUserRepository));
+            Assert.IsInstanceOfType(instance2, typeof(IUserRepository));
+            Assert.IsInstanceOfType(instance3, typeof(IUserRepository));
 
             Assert.AreNotSame(instance1, instance2);
             Assert.AreNotSame(instance2, instance3);
@@ -28,37 +46,18 @@ namespace Venus.Tests
         }
 
         [TestMethod()]
-        public void TransientLifetime()
+        public void PerContainerLifetime()
         {
-            var c = new IocContainer();
-            c.Register<IFoo, Foo1>(new TransientLifetime());
+            var c = new VenusContainer();
+            c.Define<IUserRepository, SqlUserRepository>(new PerContainerLifetime());
 
-            var instance1 = c.Resolve<IFoo>();
-            var instance2 = c.Resolve<IFoo>();
-            var instance3 = c.Resolve<IFoo>();
+            var instance1 = c.Lookup<IUserRepository>();
+            var instance2 = c.Lookup<IUserRepository>();
+            var instance3 = c.Lookup<IUserRepository>();
 
-            Assert.IsInstanceOfType(instance1, typeof(Foo1));
-            Assert.IsInstanceOfType(instance2, typeof(Foo1));
-            Assert.IsInstanceOfType(instance3, typeof(Foo1));
-
-            Assert.AreNotSame(instance1, instance2);
-            Assert.AreNotSame(instance2, instance3);
-            Assert.AreNotSame(instance1, instance3);
-        }
-
-        [TestMethod()]
-        public void ContainerLifetime()
-        {
-            var c = new IocContainer();
-            c.Register<IFoo, Foo1>(new ContainerLifetime());
-
-            var instance1 = c.Resolve<IFoo>();
-            var instance2 = c.Resolve<IFoo>();
-            var instance3 = c.Resolve<IFoo>();
-
-            Assert.IsInstanceOfType(instance1, typeof(Foo1));
-            Assert.IsInstanceOfType(instance2, typeof(Foo1));
-            Assert.IsInstanceOfType(instance3, typeof(Foo1));
+            Assert.IsInstanceOfType(instance1, typeof(IUserRepository));
+            Assert.IsInstanceOfType(instance2, typeof(IUserRepository));
+            Assert.IsInstanceOfType(instance3, typeof(IUserRepository));
 
             Assert.AreSame(instance1, instance2);
             Assert.AreSame(instance2, instance3);

@@ -8,7 +8,7 @@ namespace Venus
     /// <summary>
     /// Indicates a required property dependency or a named constructor dependency.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
     public class InjectAttribute : Attribute
     {
         /// <summary>
@@ -24,6 +24,9 @@ namespace Venus
         /// <param name="serviceName">The name of the service to be injected.</param>
         public InjectAttribute(string serviceName)
         {
+            if (serviceName == null)
+                throw new ArgumentNullException("serviceName");
+
             ServiceName = serviceName;
         }
 

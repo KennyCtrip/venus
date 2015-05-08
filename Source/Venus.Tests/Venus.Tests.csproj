@@ -54,18 +54,28 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AutoWiringTest.cs" />
-    <Compile Include="Foo.cs" />
+    <Compile Include="ContainerLoaderTest.cs" />
+    <Compile Include="InitializeTest.cs" />
+    <Compile Include="UserService.cs" />
     <Compile Include="LifetimeTest.cs" />
-    <Compile Include="RegisterInstanceTest.cs" />
-    <Compile Include="RegisterTypeTest.cs" />
+    <Compile Include="AutoRegistrationTest.cs" />
+    <Compile Include="DefineInstanceTest.cs" />
+    <Compile Include="DefineTypeTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ResolveTest.cs" />
+    <Compile Include="LookupTest.cs" />
+    <Compile Include="UserServiceAutoRegistration.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Venus\Venus.csproj">
       <Project>{9fb80bb9-06fe-4924-a390-c90b46f41def}</Project>
       <Name>Venus</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="VenusIoc.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Sample.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

@@ -32,12 +32,10 @@ namespace Venus.Extensions.Annotation
         /// dependencies for the given <paramref name="type"/>.</returns>
         public override IEnumerable<PropertyDependency> Execute(Type type)
         {
-            var properties =
-                PropertySelector.Execute(type).Where(p => p.IsDefined(typeof(InjectAttribute), true)).ToArray();
+            var properties = PropertySelector.Execute(type).Where(p => p.IsDefined(typeof(InjectAttribute), true)).ToArray();
             foreach (var propertyInfo in properties)
             {
-                var injectAttribute =
-                    (InjectAttribute)propertyInfo.GetCustomAttributes(typeof(InjectAttribute), true).FirstOrDefault();
+                var injectAttribute = (InjectAttribute)propertyInfo.GetCustomAttributes(typeof(InjectAttribute), true).FirstOrDefault();
                 if (injectAttribute != null)
                 {
                     yield return

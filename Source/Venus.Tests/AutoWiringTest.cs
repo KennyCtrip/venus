@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Venus;
@@ -11,45 +12,46 @@ namespace Venus.Tests
         [TestMethod]
         public void DefaultWiring()
         {
-            var c = new IocContainer();
-            c.Register<IFoo, Foo1>();
-            c.Register<IBar, Bar1>();
-            c.Register<IFooBar, FooBar1>();
+            var c = new VenusContainer();
+            c.Define<IUserRepository, SqlUserRepository>();
+            c.Define<ILogger, FileLogger>();
+            c.Define<IUserService, UserServiceWithConstructorDependency>();
+            c.Define<FullInitialization>();
 
-            var instance = c.Resolve<IFooBar>();
+            var service = c.Lookup<IUserService>();
 
-            Assert.AreEqual("Foo1", instance.Foo.Name);
-            Assert.AreEqual("Bar1", instance.Bar.Name);
+            Assert.AreEqual("sql", service.UserRepository.Name);
+            Assert.AreEqual("file", service.Logger.Name);
         }
 
         [TestMethod]
         public void AnnotatedNamelessWiring()
         {
-            var c = new IocContainer();
-            c.Register<IFoo, Foo1>();
-            c.Register<IBar, Bar1>();
-            c.Register<IFooBar, FooBar2>();
+            var c = new VenusContainer();
+            c.Define<IUserRepository, SqlUserRepository>();
+            c.Define<ILogger, FileLogger>();
+            c.Define<IUserService, UserServiceWithConstructorAndPropertyDependencies>();
 
-            var instance = c.Resolve<IFooBar>();
+            var service = c.Lookup<IUserService>();
 
-            Assert.AreEqual("Foo1", instance.Foo.Name);
-            Assert.AreEqual("Bar1", instance.Bar.Name);
+            Assert.AreEqual("sql", service.UserRepository.Name);
+            Assert.AreEqual("file", service.Logger.Name);
         }
 
         [TestMethod]
         public void AnnotatedNamedWiring()
         {
-            var c = new IocContainer();
-            c.Register<IFoo, Foo1>("foo1");
-            c.Register<IFoo, Foo2>("foo2");
-            c.Register<IBar, Bar1>("bar1");
-            c.Register<IBar, Bar2>("bar2");
-            c.Register<IFooBar, FooBar3>();
+            var c = new VenusContainer();
+            c.Define<IUserRepository, SqlUserRepository>("sql");
+            c.Define<IUserRepository, OracleUserRepository>("oracle");
+            c.Define<ILogger, FileLogger>("file");
+            c.Define<ILogger, MailLogger>("mail");
+            c.Define<IUserService, UserServiceWithNamedDependencies>();
 
-            var instance = c.Resolve<IFooBar>();
+            var service = c.Lookup<IUserService>();
 
-            Assert.AreEqual("Foo2", instance.Foo.Name);
-            Assert.AreEqual("Bar2", instance.Bar.Name);
+            Assert.AreEqual("oracle", service.UserRepository.Name);
+            Assert.AreEqual("mail", service.Logger.Name);
         }
     }
 }

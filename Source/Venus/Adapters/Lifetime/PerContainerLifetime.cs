@@ -8,7 +8,7 @@ namespace Venus
     /// <summary>
     /// Ensures that only one instance of a given service can exist within the container. 
     /// </summary>
-    public class ContainerLifetime : ILifetime, IDisposable
+    public class PerContainerLifetime : ILifetime, IDisposable
     {
         private Venus.LightInject.PerContainerLifetime lifetime = new Venus.LightInject.PerContainerLifetime();
 
@@ -23,7 +23,7 @@ namespace Venus
         }
 
         /// <summary>
-        /// Disposes the service instances managed by this <see cref="ContainerLifetime"/> instance.
+        /// Disposes the service instances managed by this <see cref="PerContainerLifetime"/> instance.
         /// </summary>
         public void Dispose()
         {

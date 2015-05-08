@@ -770,6 +770,33 @@ namespace Venus.LightInject
     }
 
     /// <summary>
+    /// Represents a class that is responsible for selecting injectable fields.
+    /// </summary>
+    internal interface IFieldSelector
+    {
+        /// <summary>
+        /// Selects fields that represents a dependency from the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> for which to select the fields.</param>
+        /// <returns>A list of injectable fields.</returns>
+        IEnumerable<FieldInfo> Execute(Type type);
+    }
+
+    /// <summary>
+    /// Represents a class that is responsible for selecting the field dependencies for a given <see cref="Type"/>.
+    /// </summary>
+    internal interface IFieldDependencySelector
+    {
+        /// <summary>
+        /// Selects the field dependencies for the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> for which to select the field dependencies.</param>
+        /// <returns>A list of <see cref="FieldDependency"/> instances that represents the field
+        /// dependencies for the given <paramref name="type"/>.</returns>
+        IEnumerable<FieldDependency> Execute(Type type);
+    }
+
+    /// <summary>
     /// Represents a class that is responsible for selecting the constructor dependencies for a given <see cref="ConstructorInfo"/>.
     /// </summary>
     internal interface IConstructorDependencySelector
@@ -973,6 +1000,13 @@ namespace Venus.LightInject
         /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
         /// <param name="methodInfo">A <see cref="MethodInfo"/> representing a method.</param>
         void Emit(OpCode code, MethodInfo methodInfo);
+
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given field.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="methodInfo">A <see cref="FieldInfo"/> representing a field.</param>
+        void Emit(OpCode code, FieldInfo fieldInfo);
 
         /// <summary>
         /// Declares a local variable of the specified type.
@@ -1818,6 +1852,7 @@ namespace Venus.LightInject
             compositionRootExecutor = new CompositionRootExecutor(this);
             AssemblyScanner = new AssemblyScanner(concreteTypeExtractor, compositionRootTypeExtractor, compositionRootExecutor);
             PropertyDependencySelector = new PropertyDependencySelector(new PropertySelector());
+            FieldDependencySelector = new FieldDependencySelector(new EmptyFieldSelector()); //@modify
             ConstructorDependencySelector = new ConstructorDependencySelector();
             ConstructorSelector = new MostResolvableConstructorSelector(CanGetInstance);
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
@@ -1837,6 +1872,12 @@ namespace Venus.LightInject
         /// is responsible for selecting the property dependencies for a given type.
         /// </summary>
         public IPropertyDependencySelector PropertyDependencySelector { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IFieldDependencySelector"/> instance that 
+        /// is responsible for selecting the field dependencies for a given type.
+        /// </summary>
+        public IFieldDependencySelector FieldDependencySelector { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="IConstructorDependencySelector"/> instance that 
@@ -1978,15 +2019,18 @@ namespace Venus.LightInject
         /// </remarks>             
         public void RegisterAssembly(Assembly assembly)
         {
-            Type[] compositionRootTypes = compositionRootTypeExtractor.Execute(assembly);
-            if (compositionRootTypes.Length == 0)
-            {
-                RegisterAssembly(assembly, (serviceType, implementingType) => true);
-            }
-            else
-            {
-                AssemblyScanner.Scan(assembly, this);
-            }    
+            //@modify
+            //Type[] compositionRootTypes = compositionRootTypeExtractor.Execute(assembly);
+            //if (compositionRootTypes.Length == 0)
+            //{
+            //    RegisterAssembly(assembly, (serviceType, implementingType) => true);
+            //}
+            //else
+            //{
+            //    AssemblyScanner.Scan(assembly, this);
+            //}
+
+            RegisterAssembly(assembly, (serviceType, implementingType) => true);
         }
 
         /// <summary>
@@ -2774,6 +2818,62 @@ namespace Venus.LightInject
             return GetInstance<IEnumerable<TService>>();
         }
 
+        public IEnumerable<TService> GetInstanceList<TService>()
+        {
+            ThreadSafeDictionary<string, ServiceRegistration> services;
+            if (availableServices.TryGetValue(typeof(TService), out services))
+            {
+                foreach (ServiceRegistration sr in services.Values)
+                {
+                    yield return (TService)GetInstance(sr.ServiceType, sr.ServiceName);
+                }
+            }
+        }
+
+        public IEnumerable<object> GetInstanceList(Type serviceType)
+        {
+            ThreadSafeDictionary<string, ServiceRegistration> services;
+            if (availableServices.TryGetValue(serviceType, out services))
+            {
+                foreach (ServiceRegistration sr in services.Values)
+                {
+                    yield return GetInstance(sr.ServiceType, sr.ServiceName);
+                }
+            }
+        }
+
+        public IDictionary<string, TService> GetInstanceMap<TService>()
+        {
+            var instanceMap = new Dictionary<string, TService>();
+
+            ThreadSafeDictionary<string, ServiceRegistration> services;
+            if (availableServices.TryGetValue(typeof(TService), out services))
+            {
+                foreach (ServiceRegistration sr in services.Values)
+                {
+                    instanceMap.Add(sr.ServiceName, (TService)GetInstance(sr.ServiceType, sr.ServiceName));
+                }
+            }
+
+            return instanceMap;
+        }
+
+        public IDictionary<string, object> GetInstanceMap(Type serviceType)
+        {
+            var instanceMap = new Dictionary<string, object>();
+
+            ThreadSafeDictionary<string, ServiceRegistration> services;
+            if (availableServices.TryGetValue(serviceType, out services))
+            {
+                foreach (ServiceRegistration sr in services.Values)
+                {
+                    instanceMap.Add(sr.ServiceName, GetInstance(sr.ServiceType, sr.ServiceName));
+                }
+            }
+
+            return instanceMap;
+        }
+
         /// <summary>
         /// Creates an instance of a concrete class.
         /// </summary>
@@ -2833,11 +2933,11 @@ namespace Venus.LightInject
             emitter.Store(array);            
 
             for (int index = 0; index < emitMethods.Count; index++)
-            {                
+            {
                 emitter.Push(array);
                 emitter.Push(index);
-                emitMethods[index](emitter);                
-                emitter.UnboxOrCast(elementType);                                    
+                emitMethods[index](emitter);
+                emitter.UnboxOrCast(elementType);
                 emitter.Emit(OpCodes.Stelem, elementType);
             }
 
@@ -2962,6 +3062,7 @@ namespace Venus.LightInject
                 ConstructorSelector,
                 ConstructorDependencySelector,
                 PropertyDependencySelector,
+                FieldDependencySelector, //@modify
                 GetConstructorDependencyExpression,
                 GetPropertyDependencyExpression);
         }
@@ -3253,7 +3354,7 @@ namespace Venus.LightInject
                 emitter.PushConstant(serviceFactoryIndex, typeof(IServiceFactory));
                 emitter.Push(instanceVariable);                
                 MethodInfo invokeMethod = delegateType.GetMethod("Invoke");
-                emitter.Call(invokeMethod);                
+                emitter.Call(invokeMethod);          
             }
 
             emitter.Push(instanceVariable);
@@ -3281,6 +3382,7 @@ namespace Venus.LightInject
             EmitConstructorDependencies(constructionInfo, emitter, decoratorTargetEmitMethod);
             emitter.Emit(OpCodes.Newobj, constructionInfo.Constructor);
             EmitPropertyDependencies(constructionInfo, emitter);
+            EmitFieldDependencies(constructionInfo, emitter); //@modify
         }
 
         private void EmitNewInstanceUsingFactoryDelegate(Delegate factoryDelegate, IEmitter emitter)
@@ -3364,7 +3466,25 @@ namespace Venus.LightInject
             emitter.Push(instanceVariable);
             propertyDependencyEmitMethod(emitter);                
             emitter.UnboxOrCast(propertyDependency.ServiceType);
-            emitter.Call(propertyDependency.Property.GetSetMethod());
+
+            //@modify
+            //emitter.Call(propertyDependency.Property.GetSetMethod());
+            emitter.Call(propertyDependency.Property.GetSetMethod(true));
+        }
+
+        private void EmitFieldDependency(IEmitter emitter, FieldDependency fieldDependency, LocalBuilder instanceVariable)
+        {
+            var fieldDependencyEmitMethod = GetEmitMethodForDependency(fieldDependency);
+
+            if (fieldDependencyEmitMethod == null)
+            {
+                return;
+            }
+
+            emitter.Push(instanceVariable);
+            fieldDependencyEmitMethod(emitter);
+            emitter.UnboxOrCast(fieldDependency.ServiceType);
+            emitter.Emit(OpCodes.Stfld, fieldDependency.Field);
         }
 
         private Action<IEmitter> GetEmitMethodForDependency(Dependency dependency)
@@ -3427,7 +3547,7 @@ namespace Venus.LightInject
             }
 
             emitter.Call(methodInfo);
-        }        
+        }
 
         private void EmitPropertyDependencies(ConstructionInfo constructionInfo, IEmitter emitter)
         {
@@ -3444,6 +3564,23 @@ namespace Venus.LightInject
             }
 
             emitter.Push(instanceVariable);            
+        }
+
+        private void EmitFieldDependencies(ConstructionInfo constructionInfo, IEmitter emitter)
+        {
+            if (constructionInfo.FieldDependencies.Count == 0)
+            {
+                return;
+            }
+
+            LocalBuilder instanceVariable = emitter.DeclareLocal(constructionInfo.ImplementingType);
+            emitter.Store(instanceVariable);
+            foreach (var fieldDependency in constructionInfo.FieldDependencies)
+            {
+                EmitFieldDependency(emitter, fieldDependency, instanceVariable);
+            }
+
+            emitter.Push(instanceVariable);
         }
 
         private Action<IEmitter> CreateEmitMethodForUnknownService(Type serviceType, string serviceName)
@@ -4128,6 +4265,40 @@ namespace Venus.LightInject
     }
 
     /// <summary>
+    /// Selects the field dependencies for a given <see cref="Type"/>.
+    /// </summary>
+    internal class FieldDependencySelector : IFieldDependencySelector
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FieldDependencySelector"/> class.
+        /// </summary>
+        /// <param name="fieldSelector">The <see cref="IFieldSelector"/> that is 
+        /// responsible for selecting a list of injectable fields.</param>
+        public FieldDependencySelector(IFieldSelector fieldSelector)
+        {
+            FieldSelector = fieldSelector;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="IFieldSelector"/> that is responsible for selecting a 
+        /// list of injectable fields.
+        /// </summary>
+        protected IFieldSelector FieldSelector { get; private set; }
+
+        /// <summary>
+        /// Selects the field dependencies for the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> for which to select the field dependencies.</param>
+        /// <returns>A list of <see cref="FieldDependency"/> instances that represents the field
+        /// dependencies for the given <paramref name="type"/>.</returns>
+        public virtual IEnumerable<FieldDependency> Execute(Type type)
+        {
+            return FieldSelector.Execute(type).Select(
+                f => new FieldDependency { Field = f, ServiceName = string.Empty, ServiceType = f.FieldType });
+        }
+    }
+
+    /// <summary>
     /// Builds a <see cref="ConstructionInfo"/> instance based on the implementing <see cref="Type"/>.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -4136,6 +4307,7 @@ namespace Venus.LightInject
         private readonly IConstructorSelector constructorSelector;
         private readonly IConstructorDependencySelector constructorDependencySelector;
         private readonly IPropertyDependencySelector propertyDependencySelector;
+        private readonly IFieldDependencySelector fieldDependencySelector;
         private readonly Func<Type, string, Expression> getConstructorDependencyExpression;
 
         private readonly Func<Type, string, Expression> getPropertyDependencyExpression;
@@ -4155,12 +4327,14 @@ namespace Venus.LightInject
             IConstructorSelector constructorSelector,
             IConstructorDependencySelector constructorDependencySelector,
             IPropertyDependencySelector propertyDependencySelector,
+            IFieldDependencySelector fieldDependencySelector,
             Func<Type, string, Expression> getConstructorDependencyExpression,
             Func<Type, string, Expression> getPropertyDependencyExpression)
         {
             this.constructorSelector = constructorSelector;
             this.constructorDependencySelector = constructorDependencySelector;
             this.propertyDependencySelector = propertyDependencySelector;
+            this.fieldDependencySelector = fieldDependencySelector; //@modify
             this.getConstructorDependencyExpression = getConstructorDependencyExpression;
             this.getPropertyDependencyExpression = getPropertyDependencyExpression;
         }
@@ -4176,6 +4350,8 @@ namespace Venus.LightInject
             var constructionInfo = new ConstructionInfo();            
             constructionInfo.ImplementingType = implementingType;
             constructionInfo.PropertyDependencies.AddRange(GetPropertyDependencies(implementingType));
+            constructionInfo.FieldDependencies.AddRange(GetFieldDependencies(implementingType)); //@modify
+
             if (!registration.IgnoreConstructorDependencies)
             {                
                 constructionInfo.Constructor = constructorSelector.Execute(implementingType);
@@ -4211,6 +4387,11 @@ namespace Venus.LightInject
             }
 
             return propertyDependencies;
+        }
+
+        private IEnumerable<FieldDependency> GetFieldDependencies(Type implementingType)
+        {
+            return fieldDependencySelector.Execute(implementingType);
         }
     }
 
@@ -4375,9 +4556,18 @@ namespace Venus.LightInject
 
         private static void HandleMemberAssignment(MemberAssignment memberAssignment, ConstructionInfo constructionInfo)
         {
-            var propertyDependency = CreatePropertyDependency(memberAssignment);
-            ApplyDependencyDetails(memberAssignment.Expression, propertyDependency);
-            constructionInfo.PropertyDependencies.Add(propertyDependency);
+            if (memberAssignment.Member.MemberType == MemberTypes.Property)
+            {
+                var propertyDependency = CreatePropertyDependency(memberAssignment);
+                ApplyDependencyDetails(memberAssignment.Expression, propertyDependency);
+                constructionInfo.PropertyDependencies.Add(propertyDependency);
+            }
+            else if (memberAssignment.Member.MemberType == MemberTypes.Field)
+            {
+                var fieldDependency = CreateFieldDependency(memberAssignment);
+                ApplyDependencyDetails(memberAssignment.Expression, fieldDependency);
+                constructionInfo.FieldDependencies.Add(fieldDependency);
+            }
         }
 
         private static ConstructorDependency CreateConstructorDependency(ParameterInfo parameterInfo)
@@ -4399,6 +4589,16 @@ namespace Venus.LightInject
                 ServiceType = ((PropertyInfo)memberAssignment.Member).PropertyType
             };
             return propertyDependecy;
+        }
+
+        private static FieldDependency CreateFieldDependency(MemberAssignment memberAssignment)
+        {
+            var fieldDependecy = new FieldDependency
+            {
+                Field = (FieldInfo)memberAssignment.Member,
+                ServiceType = ((FieldInfo)memberAssignment.Member).FieldType
+            };
+            return fieldDependecy;
         }
 
         private static void ApplyDependencyDetails(Expression expression, Dependency dependency)
@@ -4641,6 +4841,7 @@ namespace Venus.LightInject
         {
             PropertyDependencies = new List<PropertyDependency>();
             ConstructorDependencies = new List<ConstructorDependency>();
+            FieldDependencies = new List<FieldDependency>();
         }
 
         /// <summary>
@@ -4658,6 +4859,12 @@ namespace Venus.LightInject
         /// the property dependencies for the target service instance. 
         /// </summary>
         public List<PropertyDependency> PropertyDependencies { get; private set; }
+
+        /// <summary>
+        /// Gets a list of <see cref="FieldDependency"/> instances that represent 
+        /// the field dependencies for the target service instance. 
+        /// </summary>
+        public List<FieldDependency> FieldDependencies { get; private set; }
 
         /// <summary>
         /// Gets a list of <see cref="ConstructorDependency"/> instances that represent 
@@ -4741,6 +4948,37 @@ namespace Venus.LightInject
         public override string ToString()
         {
             return string.Format("[Target Type: {0}], [Property: {1}({2})]", Property.DeclaringType, Property.Name, Property.PropertyType) + ", " + base.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Represents a field dependency.
+    /// </summary>
+    internal class FieldDependency : Dependency
+    {
+        /// <summary>
+        /// Gets or sets the <see cref="FieldInfo"/>
+        /// </summary>
+        public FieldInfo Field { get; set; }
+
+        /// <summary>
+        /// Gets the name of the dependency accessor.
+        /// </summary>
+        public override string Name
+        {
+            get
+            {
+                return Field.Name;
+            }
+        }
+
+        /// <summary>
+        /// Returns textual information about the dependency.
+        /// </summary>
+        /// <returns>A string that describes the dependency.</returns>
+        public override string ToString()
+        {
+            return string.Format("[Target Type: {0}], [Field: {1}({2})]", Field.DeclaringType, Field.Name, Field.FieldType) + ", " + base.ToString();
         }
     }
 
@@ -5397,7 +5635,9 @@ namespace Venus.LightInject
         /// <returns>A list of properties that represents a dependency to the target <paramref name="type"/></returns>
         public IEnumerable<PropertyInfo> Execute(Type type)
         {
-            return type.GetProperties().Where(IsInjectable).ToList();
+            //@modify
+            //return type.GetProperties().Where(IsInjectable).ToList();
+            return type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(IsInjectable).ToList();
         }
 
         /// <summary>
@@ -5412,7 +5652,49 @@ namespace Venus.LightInject
 
         private static bool IsReadOnly(PropertyInfo propertyInfo)
         {
-            return propertyInfo.GetSetMethod() == null || propertyInfo.GetSetMethod().IsStatic || propertyInfo.GetSetMethod().IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
+            //@modify
+            //return propertyInfo.GetSetMethod() == null || propertyInfo.GetSetMethod().IsStatic || propertyInfo.GetSetMethod().IsPrivate || propertyInfo.GetIndexParameters().Length > 0;
+            var setMethod = propertyInfo.GetSetMethod(true);
+            return setMethod == null || setMethod.IsStatic || propertyInfo.GetIndexParameters().Length > 0;
+        }
+    }
+
+    /// <summary>
+    /// Selects the fields that represents a dependency to the target <see cref="Type"/>.
+    /// </summary>
+    internal class FieldSelector : IFieldSelector
+    {
+        /// <summary>
+        /// Selects fields that represents a dependency from the given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> for which to select the fields.</param>
+        /// <returns>A list of fields that represents a dependency to the target <paramref name="type"/></returns>
+        public IEnumerable<FieldInfo> Execute(Type type)
+        {
+            return type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(IsInjectable).ToList();
+        }
+
+        /// <summary>
+        /// Determines if the <paramref name="fieldInfo"/> represents an injectable field.
+        /// </summary>
+        /// <param name="fieldInfo">The <see cref="FieldInfo"/> that describes the target field.</param>
+        /// <returns><b>true</b> if the field is injectable, otherwise <b>false</b>.</returns>
+        protected virtual bool IsInjectable(FieldInfo fieldInfo)
+        {
+            return !IsReadOnly(fieldInfo);
+        }
+
+        private static bool IsReadOnly(FieldInfo fieldInfo)
+        {
+            return fieldInfo.IsStatic;
+        }
+    }
+
+    internal class EmptyFieldSelector : IFieldSelector
+    {
+        public IEnumerable<FieldInfo> Execute(Type type)
+        {
+            return Enumerable.Empty<FieldInfo>();
         }
     }
 
@@ -5789,7 +6071,7 @@ namespace Venus.LightInject
         /// <param name="parameterTypes">The list of parameter types used by the current dynamic method.</param>
         public Emitter(ILGenerator generator, Type[] parameterTypes)
         {
-            this.generator = generator;            
+            this.generator = generator;     
             this.parameterTypes = parameterTypes;
         }
 
@@ -6142,6 +6424,35 @@ namespace Venus.LightInject
             }
 
             instructions.Add(new Instruction<MethodInfo>(code, methodInfo, il => il.Emit(code, methodInfo)));                                   
+        }
+
+        /// <summary>
+        /// Puts the specified instruction onto the Microsoft intermediate language (MSIL) stream followed by the metadata token for the given field.
+        /// </summary>
+        /// <param name="code">The MSIL instruction to be emitted onto the stream.</param>
+        /// <param name="methodInfo">A <see cref="FieldInfo"/> representing a field.</param>
+        public void Emit(OpCode code, FieldInfo fieldInfo)
+        {
+            if (code == OpCodes.Ldfld)
+            {
+                if (!fieldInfo.IsStatic)
+                    stack.Pop();
+
+                stack.Push(fieldInfo.FieldType);
+            }
+            else if (code == OpCodes.Stfld)
+            {
+                stack.Pop();
+
+                if (!fieldInfo.IsStatic)
+                    stack.Pop();
+            }
+            else
+            {
+                throw new NotSupportedException(code.ToString());
+            }
+
+            instructions.Add(new Instruction<FieldInfo>(code, fieldInfo, il => il.Emit(code, fieldInfo)));
         }
 
         /// <summary>

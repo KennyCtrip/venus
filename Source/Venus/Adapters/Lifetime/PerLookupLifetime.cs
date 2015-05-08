@@ -6,9 +6,9 @@ using System.Text;
 namespace Venus
 {
     /// <summary>
-    /// Ensures that a new instance is created for each resolve.
+    /// Ensures that a new instance is created for each lookup.
     /// </summary>
-    public class TransientLifetime : ILifetime
+    public class PerLookupLifetime : ILifetime
     {
         /// <summary>
         /// Returns a service instance according to the specific lifetime characteristics.
