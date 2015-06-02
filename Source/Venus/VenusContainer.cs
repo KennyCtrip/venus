@@ -42,7 +42,7 @@ namespace Venus
         /// <typeparam name="TService">The service type to register.</typeparam>
         public void Define<TService>()
         {
-            container.Register<TService>(GetInnerLifetime(null));
+            container.Register<TService>(AdaptLifetime(null));
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Venus
         /// <param name="lifetime">The lifetime of the registered service.</param>
         public void Define<TService>(ILifetime lifetime)
         {
-            container.Register<TService>(GetInnerLifetime(lifetime));
+            container.Register<TService>(AdaptLifetime(lifetime));
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Venus
         /// <typeparam name="TImplementation">The implementing type.</typeparam>
         public void Define<TService, TImplementation>() where TImplementation : TService
         {
-            container.Register<TService, TImplementation>(GetInnerLifetime(null));
+            container.Register<TService, TImplementation>(AdaptLifetime(null));
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Venus
         /// <param name="lifetime">The lifetime of the registered service.</param>
         public void Define<TService, TImplementation>(ILifetime lifetime) where TImplementation : TService
         {
-            container.Register<TService, TImplementation>(GetInnerLifetime(lifetime));
+            container.Register<TService, TImplementation>(AdaptLifetime(lifetime));
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace Venus
         /// <param name="serviceName">The name of the service.</param>
         public void Define<TService, TImplementation>(string serviceName) where TImplementation : TService
         {
-            container.Register<TService, TImplementation>(serviceName, GetInnerLifetime(null));
+            container.Register<TService, TImplementation>(EscapeServiceName(serviceName), AdaptLifetime(null));
         }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace Venus
         /// <param name="lifetime">The lifetime of the registered service.</param>
         public void Define<TService, TImplementation>(string serviceName, ILifetime lifetime) where TImplementation : TService
         {
-            container.Register<TService, TImplementation>(serviceName, GetInnerLifetime(lifetime));
+            container.Register<TService, TImplementation>(EscapeServiceName(serviceName), AdaptLifetime(lifetime));
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace Venus
         /// <param name="serviceType">The concrete type to register.</param>
         public void Define(Type serviceType)
         {
-            container.Register(serviceType, GetInnerLifetime(null));
+            container.Register(serviceType, AdaptLifetime(null));
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace Venus
         /// <param name="lifetime">The lifetime of the registered service.</param>
         public void Define(Type serviceType, ILifetime lifetime)
         {
-            container.Register(serviceType, GetInnerLifetime(lifetime));
+            container.Register(serviceType, AdaptLifetime(lifetime));
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace Venus
         /// <param name="implementingType">The implementing type.</param>
         public void Define(Type serviceType, Type implementingType)
         {
-            container.Register(serviceType, implementingType, GetInnerLifetime(null));
+            container.Register(serviceType, implementingType, AdaptLifetime(null));
         }
 
         /// <summary>
@@ -136,7 +136,7 @@ namespace Venus
         /// <param name="lifetime">The lifetime of the registered service.</param>
         public void Define(Type serviceType, Type implementingType, ILifetime lifetime)
         {
-            container.Register(serviceType, implementingType, GetInnerLifetime(lifetime));
+            container.Register(serviceType, implementingType, AdaptLifetime(lifetime));
         }
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace Venus
         /// <param name="serviceName">The name of the service.</param>
         public void Define(Type serviceType, Type implementingType, string serviceName)
         {
-            container.Register(serviceType, implementingType, serviceName, GetInnerLifetime(null));
+            container.Register(serviceType, implementingType, EscapeServiceName(serviceName), AdaptLifetime(null));
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace Venus
         /// <param name="lifetime">The lifetime of the registered service.</param>
         public void Define(Type serviceType, Type implementingType, string serviceName, ILifetime lifetime)
         {
-            container.Register(serviceType, implementingType, serviceName, GetInnerLifetime(lifetime));
+            container.Register(serviceType, implementingType, EscapeServiceName(serviceName), AdaptLifetime(lifetime));
         }
         #endregion
 
@@ -182,7 +182,7 @@ namespace Venus
         /// <param name="serviceName">The name of the service.</param>
         public void DefineInstance<TService>(TService instance, string serviceName)
         {
-            container.RegisterInstance<TService>(instance, serviceName);
+            container.RegisterInstance<TService>(instance, EscapeServiceName(serviceName));
         }
 
         /// <summary>
@@ -203,7 +203,7 @@ namespace Venus
         /// <param name="serviceName">The name of the service.</param>
         public void DefineInstance(Type serviceType, object instance, string serviceName)
         {
-            container.RegisterInstance(serviceType, instance, serviceName);
+            container.RegisterInstance(serviceType, instance, EscapeServiceName(serviceName));
         }
         #endregion
 
@@ -215,7 +215,7 @@ namespace Venus
         /// <returns>The requested service instance.</returns>
         public TService Lookup<TService>()
         {
-            return container.GetInstance<TService>();
+             return container.GetInstance<TService>();
         }
 
         /// <summary>
@@ -226,7 +226,7 @@ namespace Venus
         /// <returns>The requested service instance.</returns>    
         public TService Lookup<TService>(string serviceName)
         {
-            return container.GetInstance<TService>(serviceName);
+            return container.GetInstance<TService>(EscapeServiceName(serviceName));
         }
 
         /// <summary>
@@ -247,7 +247,7 @@ namespace Venus
         /// <returns>The requested service instance.</returns>
         public object Lookup(Type serviceType, string serviceName)
         {
-            return container.GetInstance(serviceType, serviceName);
+            return container.GetInstance(serviceType, EscapeServiceName(serviceName));
         }
 
         /// <summary>
@@ -268,7 +268,7 @@ namespace Venus
         /// <returns>The requested service instance if available, otherwise default(T).</returns>
         public TService TryLookup<TService>(string serviceName)
         {
-            return container.TryGetInstance<TService>(serviceName);
+            return container.TryGetInstance<TService>(EscapeServiceName(serviceName));
         }
 
         /// <summary>
@@ -289,7 +289,7 @@ namespace Venus
         /// <returns>The requested service instance if available, otherwise null.</returns>
         public object TryLookup(Type serviceType, string serviceName)
         {
-            return container.TryGetInstance(serviceType, serviceName);
+            return container.TryGetInstance(serviceType, EscapeServiceName(serviceName));
         }
 
         /// <summary>
@@ -319,7 +319,7 @@ namespace Venus
         /// <returns>A dictionary that contains all implementations of the <typeparamref name="TService"/> type.</returns>
         public IDictionary<string, TService> LookupMap<TService>()
         {
-            return container.GetInstanceMap<TService>();
+            return container.GetInstanceMap<TService>(UnescapeServiceName);
         }
 
         /// <summary>
@@ -329,22 +329,40 @@ namespace Venus
         /// <returns>A dictionary that contains all implementations of the <paramref name="serviceType"/>.</returns>
         public IDictionary<string, object> LookupMap(Type serviceType)
         {
-            return container.GetInstanceMap(serviceType);
+            return container.GetInstanceMap(serviceType, UnescapeServiceName);
         }
         #endregion
 
         #region Private Methods
-        private LightInject.ILifetime GetLifetime()
+        private string EscapeServiceName(string serviceName)
         {
-            return new LightInject.PerContainerLifetime();
+            if (serviceName != null)
+            {
+                if (serviceName == string.Empty)
+                    return "--empty--";
+                else if (serviceName.Equals("default", StringComparison.CurrentCultureIgnoreCase))
+                    return string.Empty;
+            }
+
+            return serviceName;
         }
 
-        private LightInject.ILifetime GetInnerLifetime(ILifetime lifetime)
+        private string UnescapeServiceName(string serviceName)
+        {
+            if (serviceName == "--empty--")
+                return string.Empty;
+            else if (serviceName == string.Empty)
+                return "default";
+
+            return serviceName;
+        }
+
+        private LightInject.ILifetime AdaptLifetime(ILifetime lifetime)
         {
             if (lifetime == null)
                 return new LightInject.PerContainerLifetime();
             else
-                return new AdapterLifetime(lifetime); 
+                return new AdapterLifetime(lifetime);
         }
 
         private void Initialize(IServiceFactory serviceFactory, object instance)

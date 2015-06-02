@@ -132,7 +132,7 @@ namespace Venus.Tests
 
             var map = c.LookupMap<IUserRepository>();
             Assert.AreEqual(2, map.Count);
-            Assert.IsInstanceOfType(map[""], typeof(SqlUserRepository));
+            Assert.IsInstanceOfType(map["default"], typeof(SqlUserRepository));
             Assert.IsInstanceOfType(map["oracle"], typeof(OracleUserRepository));
 
             Assert.AreEqual(0, c.LookupMap<ILogger>().Count);
@@ -147,7 +147,7 @@ namespace Venus.Tests
 
             var map = c.LookupMap(typeof(IUserRepository));
             Assert.AreEqual(2, map.Count);
-            Assert.IsInstanceOfType(map[""], typeof(SqlUserRepository));
+            Assert.IsInstanceOfType(map["default"], typeof(SqlUserRepository));
             Assert.IsInstanceOfType(map["oracle"], typeof(OracleUserRepository));
 
             Assert.AreEqual(0, c.LookupMap<ILogger>().Count);

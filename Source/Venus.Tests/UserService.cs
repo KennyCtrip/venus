@@ -263,7 +263,7 @@ namespace Venus.Tests
             throw new NotImplementedException();
         }
 
-        public bool IsIDebugEnabled
+        public bool IsDebugEnabled
         {
             get { throw new NotImplementedException(); }
         }

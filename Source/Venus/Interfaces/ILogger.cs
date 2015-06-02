@@ -14,7 +14,7 @@ namespace Venus
         #endregion
 
         #region Debug
-        bool IsIDebugEnabled { get; }
+        bool IsDebugEnabled { get; }
         void Debug(string message);
         void Debug(string message, Exception exception);
         #endregion

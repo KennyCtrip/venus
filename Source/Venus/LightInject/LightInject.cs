@@ -1858,7 +1858,7 @@ namespace Venus.LightInject
             constructionInfoProvider = new Lazy<IConstructionInfoProvider>(CreateConstructionInfoProvider);
             methodSkeletonFactory = (returnType, parameterTypes) => new DynamicMethodSkeleton(returnType, parameterTypes);
             ScopeManagerProvider = new PerThreadScopeManagerProvider();
-            AssemblyLoader = new AssemblyLoader();            
+            AssemblyLoader = new AssemblyLoader();
         }
  
         /// <summary>
@@ -2842,32 +2842,40 @@ namespace Venus.LightInject
             }
         }
 
-        public IDictionary<string, TService> GetInstanceMap<TService>()
+        public IDictionary<string, TService> GetInstanceMap<TService>(Func<string, string> nameConverter)
         {
-            var instanceMap = new Dictionary<string, TService>();
+            var instanceMap = new Dictionary<string, TService>(StringComparer.CurrentCultureIgnoreCase);
 
             ThreadSafeDictionary<string, ServiceRegistration> services;
             if (availableServices.TryGetValue(typeof(TService), out services))
             {
                 foreach (ServiceRegistration sr in services.Values)
                 {
-                    instanceMap.Add(sr.ServiceName, (TService)GetInstance(sr.ServiceType, sr.ServiceName));
+                    string name = sr.ServiceName;
+                    if (nameConverter != null)
+                        name = nameConverter(name);
+
+                    instanceMap.Add(name, (TService)GetInstance(sr.ServiceType, sr.ServiceName));
                 }
             }
 
             return instanceMap;
         }
 
-        public IDictionary<string, object> GetInstanceMap(Type serviceType)
+        public IDictionary<string, object> GetInstanceMap(Type serviceType, Func<string, string> nameConverter)
         {
-            var instanceMap = new Dictionary<string, object>();
+            var instanceMap = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase);
 
             ThreadSafeDictionary<string, ServiceRegistration> services;
             if (availableServices.TryGetValue(serviceType, out services))
             {
                 foreach (ServiceRegistration sr in services.Values)
                 {
-                    instanceMap.Add(sr.ServiceName, GetInstance(sr.ServiceType, sr.ServiceName));
+                    string name = sr.ServiceName;
+                    if (nameConverter != null)
+                        name = nameConverter(name);
+
+                    instanceMap.Add(name, GetInstance(sr.ServiceType, sr.ServiceName));
                 }
             }
 
@@ -3853,6 +3861,7 @@ namespace Venus.LightInject
             Ensure.IsNotNull(serviceType, "serviceType");
             Ensure.IsNotNull(implementingType, "implementingType");
             Ensure.IsNotNull(serviceName, "serviceName");
+
             var serviceRegistration = new ServiceRegistration { ServiceType = serviceType, ImplementingType = implementingType, ServiceName = serviceName, Lifetime = lifetime };
             Register(serviceRegistration);         
         }
