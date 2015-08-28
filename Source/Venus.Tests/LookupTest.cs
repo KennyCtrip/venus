@@ -15,7 +15,7 @@ namespace Venus.Tests
             var c = new VenusContainer();
             c.Define<SqlUserRepository>();
             c.Define<IUserRepository, OracleUserRepository>();
-
+            
             Assert.IsNotNull(c.TryLookup<SqlUserRepository>());
             Assert.IsNotNull(c.TryLookup<IUserRepository>());
             Assert.IsNull(c.TryLookup<FileLogger>());

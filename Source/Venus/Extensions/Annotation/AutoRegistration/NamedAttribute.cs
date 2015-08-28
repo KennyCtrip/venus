@@ -20,15 +20,15 @@ namespace Venus
         /// <summary>
         /// The service type to register.
         /// </summary>
-        public Type ServiceType { get; set; }
-
-        /// <summary>
-        /// The implementing type.
-        /// </summary>
-        public string ServiceName { get; set; }
+        public Type Type { get; set; }
 
         /// <summary>
         /// The name of the service.
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// The lifetime type of the registered service.
         /// </summary>
         public Type LifetimeType { get; set; }
     }

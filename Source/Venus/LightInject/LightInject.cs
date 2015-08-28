@@ -3955,7 +3955,7 @@ namespace Venus.LightInject
                 {
                     try
                     {
-                        return CreateDynamicMethodDelegate(serviceEmitter);                        
+                        return CreateDynamicMethodDelegate(serviceEmitter);            
                     }
                     catch (InvalidOperationException ex)
                     {

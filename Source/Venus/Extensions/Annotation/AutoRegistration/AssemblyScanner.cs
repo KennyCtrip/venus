@@ -25,7 +25,7 @@ namespace Venus.Extensions.Annotation
             {
                 foreach (NamedAttribute attr in type.GetCustomAttributes(typeof(NamedAttribute), false))
                 {
-                    Type serviceType = attr.ServiceType;
+                    Type serviceType = attr.Type;
                     if (serviceType == null)
                     {
                         var interfaces = type.GetInterfaces();
@@ -63,13 +63,13 @@ namespace Venus.Extensions.Annotation
                         lifetime = new LightInject.PerContainerLifetime();
                     }
 
-                    if (attr.ServiceName == null)
+                    if (attr.Name == null)
                     {
                         serviceRegistry.Register(serviceType, type, lifetime);
                     }
                     else
                     {
-                        serviceRegistry.Register(serviceType, type, attr.ServiceName, lifetime);
+                        serviceRegistry.Register(serviceType, type, attr.Name, lifetime);
                     }
                 }
             }

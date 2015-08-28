@@ -62,6 +62,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Utility\NamespaceList.cs" />
     <Compile Include="VenusContainer.cs" />
     <Compile Include="LightInject\LightInject.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

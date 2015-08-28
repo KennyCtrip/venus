@@ -56,6 +56,7 @@
     <Compile Include="AutoWiringTest.cs" />
     <Compile Include="ContainerLoaderTest.cs" />
     <Compile Include="InitializeTest.cs" />
+    <Compile Include="NamespaceListTest.cs" />
     <Compile Include="UserService.cs" />
     <Compile Include="LifetimeTest.cs" />
     <Compile Include="AutoRegistrationTest.cs" />

@@ -6,6 +6,7 @@ using System.Xml;
 using System.IO;
 
 using Venus.LightInject;
+using Venus.Utility;
 
 namespace Venus.Extensions.Annotation
 {
@@ -13,7 +14,7 @@ namespace Venus.Extensions.Annotation
     {
         public Type[] Execute(System.Reflection.Assembly assembly)
         {
-            var targetNamespaces = new HashSet<string>();
+            var targetNamespaces = NamespaceList.Create();
             var resourceNames = assembly.GetManifestResourceNames().Where(n => n.EndsWith("VenusIoc.config"));
             foreach (var resourceName in resourceNames)
             {
@@ -26,18 +27,47 @@ namespace Venus.Extensions.Annotation
                         var name = ((XmlElement)node).GetAttribute("name");
                         if (!string.IsNullOrWhiteSpace(name))
                         {
-                            targetNamespaces.Add(name.Trim());
+                            targetNamespaces.Add(name.Split('.'));
                         }
                     }
                 }
             }
 
+            if (targetNamespaces.Count == 0)
+                return new Type[0];
+
             var types = new List<Type>();
+            var checkList = new HashSet<string>();
+            var ignoreList = new HashSet<string>();
             foreach (var type in assembly.GetTypes())
             {
-                if (targetNamespaces.Contains(type.Namespace) && !type.IsAbstract && type.IsDefined(typeof(NamedAttribute), false))
+                bool toCheck = false;
+                if (!ignoreList.Contains(type.Namespace))
                 {
-                    types.Add(type);
+                    if (checkList.Contains(type.Namespace))
+                    {
+                        toCheck = true;
+                    }
+                    else
+                    {
+                        if (targetNamespaces.Include(type.Namespace.Split('.')))
+                        {
+                            checkList.Add(type.Namespace);
+                            toCheck = true;
+                        }
+                        else
+                        {
+                            ignoreList.Add(type.Namespace);
+                        }
+                    }
+                }
+
+                if (toCheck)
+                {
+                    if (!type.IsAbstract && type.IsDefined(typeof(NamedAttribute), false))
+                    {
+                        types.Add(type);
+                    }
                 }
             }
 

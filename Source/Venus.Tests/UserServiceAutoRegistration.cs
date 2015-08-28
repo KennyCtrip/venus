@@ -19,7 +19,7 @@ namespace Venus.Tests.AutoRegistration
         }
     }
 
-    [Named(ServiceName = "oracle")]
+    [Named(Name = "oracle")]
     class OracleUserRepositoryAutoRegistered : IUserRepository
     {
         public string Name
@@ -42,7 +42,7 @@ namespace Venus.Tests.AutoRegistration
         }
     }
 
-    [Named(ServiceName = "mail")]
+    [Named(Name = "mail")]
     class MailLoggerAutoRegisered : ILogger
     {
         public string Name
@@ -76,7 +76,7 @@ namespace Venus.Tests.AutoRegistration
         }
     }
 
-    [Named(ServiceName = "UserServiceWithName")]
+    [Named(Name = "UserServiceWithName")]
     class UserServiceAutoRegisteredWithName : IUserService
     {
         [Inject("oracle")]
@@ -95,7 +95,7 @@ namespace Venus.Tests.AutoRegistration
         }
     }
 
-    [Named(ServiceName = "UserServiceWithLifetime", LifetimeType = typeof(PerLookupLifetime))]
+    [Named(Name = "UserServiceWithLifetime", LifetimeType = typeof(PerLookupLifetime))]
     class UserServiceAutoRegisteredWithLifetime : IUserService
     {
         private IUserRepository userRepository;
