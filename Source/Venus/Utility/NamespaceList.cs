@@ -49,6 +49,15 @@ namespace Venus.Utility
                         index.Add(key, list);
                     }
                 }
+                else
+                {
+                    if (ns.Length > level)
+                    {
+                        var list = index[key];
+                        if (list != null)
+                            list.Add(ns);
+                    }
+                }
             }
         }
 

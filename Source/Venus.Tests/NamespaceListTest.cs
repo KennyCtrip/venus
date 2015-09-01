@@ -21,6 +21,19 @@ namespace Venus.Tests
         }
 
         [TestMethod]
+        public void PrefixTest()
+        {
+            var list = NamespaceList.Create();
+            list.Add(new string[] { "a" });
+            list.Add(new string[] { "a", "b" });
+            list.Add(new string[] { "a", "c" });
+
+            Assert.IsTrue(list.Include(new string[] { "a" }));
+            Assert.IsTrue(list.Include(new string[] { "a", "b" }));
+            Assert.IsTrue(list.Include(new string[] { "a", "c" }));
+        }
+
+        [TestMethod]
         public void IncludeTest()
         {
             var list = NamespaceList.Create();
