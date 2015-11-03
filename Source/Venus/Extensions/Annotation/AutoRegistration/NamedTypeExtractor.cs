@@ -39,37 +39,43 @@ namespace Venus.Extensions.Annotation
             var types = new List<Type>();
             var checkList = new HashSet<string>();
             var ignoreList = new HashSet<string>();
-            foreach (var type in assembly.GetTypes())
+
+            try
             {
-                bool toCheck = false;
-                if (!ignoreList.Contains(type.Namespace))
+                foreach (var type in assembly.GetTypes())
                 {
-                    if (checkList.Contains(type.Namespace))
+                    bool toCheck = false;
+                    if (type.Namespace != null && !ignoreList.Contains(type.Namespace))
                     {
-                        toCheck = true;
-                    }
-                    else
-                    {
-                        if (targetNamespaces.Include(type.Namespace.Split('.')))
+                        if (checkList.Contains(type.Namespace))
                         {
-                            checkList.Add(type.Namespace);
                             toCheck = true;
                         }
                         else
                         {
-                            ignoreList.Add(type.Namespace);
+                            if (targetNamespaces.Include(type.Namespace.Split('.')))
+                            {
+                                checkList.Add(type.Namespace);
+                                toCheck = true;
+                            }
+                            else
+                            {
+                                ignoreList.Add(type.Namespace);
+                            }
+                        }
+                    }
+
+                    if (toCheck)
+                    {
+                        if (!type.IsAbstract && type.IsDefined(typeof(NamedAttribute), false))
+                        {
+                            types.Add(type);
                         }
                     }
                 }
-
-                if (toCheck)
-                {
-                    if (!type.IsAbstract && type.IsDefined(typeof(NamedAttribute), false))
-                    {
-                        types.Add(type);
-                    }
-                }
             }
+            catch
+            { }
 
             return types.ToArray();
         }
